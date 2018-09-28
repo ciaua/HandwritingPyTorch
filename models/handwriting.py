@@ -37,10 +37,11 @@ class UncondStackedGRUCell(nn.Module):
             1 + num_components*num_params_per_comp
 
         hidden_sizes: list
-            the feature size in a GRU cell
+            the feature sizes in GRU cells
 
         num_cells: int
             the number of GRU cells in a stack
+            len(hidden_sizes) == num_cells
 
     Inputs:
         next_stroke: Tensor
@@ -97,6 +98,46 @@ class UncondStackedGRUCell(nn.Module):
 
 class UncondNet(nn.Module):
     ''' A recurrent neural network that unconditionally generates strokes
+
+    Args:
+        input_size: int
+            3
+
+        output_size: int
+            1 + num_components*num_params_per_comp
+
+        hidden_sizes: list
+            the feature sizes in GRU cells
+
+        num_components: int
+            the number of Gaussians in the mixture
+
+        num_params_per_comp: int
+            the number of parameters in a Gaussian
+
+
+    Inputs:
+        real_stroke: Tensor
+            shape=(batch_size, 3, num_steps)
+
+        num_steps: int
+            number of timestep the model will run
+            If it is in test mode (that is, real_stroke is None),
+            `num_steps` should be provided.
+
+        seed: int
+            random seed
+
+
+    Outputs:
+        outputs:
+            In trianing mode (that is, real_stroke is not None),
+            it is the parameters of the distributions with
+            shape=(batch_size, output_size, timesteps)
+
+            In evaluation mode (that is, real_stroke is None),
+            it is the strokes with
+            shape=(batch_size, 3, timesteps)
     '''
     def __init__(self, input_size, output_size, hidden_sizes,
                  num_components, num_params_per_comp):
@@ -176,7 +217,6 @@ class UncondNet(nn.Module):
         If real_stroke is None, it means that this is for evaluation.
         Therefore, the `outputs' will the predicted strokes.
 
-        noise.shape=(batch_size, noise_size)
         real_stroke.shape=(batch_size, 3, num_steps)
         '''
         if seed is not None:
@@ -228,10 +268,11 @@ class CondStackedGRUCell(nn.Module):
             1 + num_components*num_params_per_comp
 
         hidden_sizes: list
-            the feature size in a GRU cell
+            the feature sizes in GRU cells
 
         num_cells: int
             the number of GRU cells in a stack
+            len(hidden_sizes) == num_cells
 
         num_allchars: int
             the number of unique chars in the whole dataset.
@@ -248,6 +289,18 @@ class CondStackedGRUCell(nn.Module):
             len(hiddens) == num_layers
             The i-th item in `hiddens` has the
             shape=(batch_size, hidden_sizes[i])
+
+        sentence: Tensor
+            the input conditioning sentence in the one-hot format
+            shape=(batch_size, num_allchars, max_sentence_len)
+
+        soft_window: Tensor
+            the soft window at this timestep
+            shape=(batch_size, num_allchars)
+
+        ka: Tensor
+            kappa
+            shape=(batch_size, num_components)
 
     Outputs:
         output: Tensor
@@ -351,6 +404,55 @@ class CondStackedGRUCell(nn.Module):
 
 
 class CondNet(nn.Module):
+    ''' A recurrent neural network that generates strokes conditioned on a text
+
+    Args:
+        input_size: int
+            3
+
+        output_size: int
+            1 + num_components*num_params_per_comp
+
+        hidden_sizes: list
+            the feature sizes in GRU cells
+
+        num_components: int
+            the number of Gaussians in the mixture
+
+        num_params_per_comp: int
+            the number of parameters in a Gaussian
+
+        num_allchars: int
+            the number of unique chars in the whole dataset.
+
+        num_sw_components: int
+            the number of Gaussian functions used in the soft window
+
+    Inputs:
+        sentence: Tensor
+            the input conditioning sentence in the one-hot format
+            shape=(batch_size, num_allchars, max_sentence_len)
+
+        real_stroke: Tensor
+            shape=(batch_size, 3, num_steps)
+
+        seed: int
+            random seed
+
+        max_steps: int
+            the max number of steps that will be executed
+
+
+    Outputs:
+        outputs:
+            In trianing mode (that is, real_stroke is not None),
+            it is the parameters of the distributions with
+            shape=(batch_size, output_size, timesteps)
+
+            In evaluation mode (that is, real_stroke is None),
+            it is the strokes with
+            shape=(batch_size, 3, timesteps)
+    '''
     def __init__(self, input_size, output_size, hidden_sizes,
                  num_components, num_params_per_comp,
                  num_allchars, num_sw_components):
@@ -430,10 +532,6 @@ class CondNet(nn.Module):
 
     def forward(self, sentence, mask=None, real_stroke=None, seed=None,
                 max_steps=None):
-        '''
-        sentence.shape=(batch_size, num_chars, num_steps)
-        real_stroke.shape=(batch_size, 3, num_steps)
-        '''
         if seed is not None:
             torch.manual_seed(seed)
 
@@ -481,6 +579,43 @@ class CondNet(nn.Module):
 
 
 class RecogNet(nn.Module):
+    ''' A recurrent neural network that try to recognize the text given handwriting
+
+    Args:
+        input_size: int
+            3
+
+        output_size: int
+            the number of unique chars in the dataset
+
+        hidden_size: int
+            the feature size in GRU cells
+
+        num_layers: int
+            the number of GRU layers
+
+
+    Inputs:
+        x: Tensor
+            strokes
+            shape=(batch_size, num_steps, 3)
+
+    Outputs:
+        x_char: Tensor
+            Prediction of the chars at all the timesteps
+            The softmax function is applied outside the network
+
+            shape=(batch_size, num_steps, output_size)
+            output_size==num_allchars
+
+        x_cut: Tensor
+            Prediction of the locations to cut neighboring chars
+            It should be in the range [0, 1], but the sigmoid function is applied
+            outside the network
+
+            shape=(batch_size, num_steps)
+
+    '''
     def __init__(self, input_size, output_size, hidden_size, num_layers):
         super(RecogNet, self).__init__()
 
@@ -503,7 +638,6 @@ class RecogNet(nn.Module):
         self.cut_head = nn.Conv1d(256, 1, 3, 1, 1)
 
     def make_init_hidden(self, batch_size):
-        # return torch.zeros(batch_size, k)
         init_hidden = torch.zeros(
             self.num_layers*self.num_directions, batch_size, self.hidden_size)
 
@@ -603,7 +737,6 @@ def sentence2onehot(sentence, num_allchars):
     '''
     bs, sl = sentence.size()
 
-    # print(bs, num_allchars, sl)
     out = torch.zeros(bs, num_allchars, sl)
 
     out.scatter_(1, sentence[:, None].long(), 1.)
@@ -613,10 +746,10 @@ def sentence2onehot(sentence, num_allchars):
 def generate_unconditionally(random_seed=1, num_steps=600):
     '''
     Input:
-      random_seed - integer
+        random_seed: int
 
     Output:
-      stroke - numpy 2D-array (T x 3)
+        stroke: numpy 2D-array (T x 3)
     '''
     # Generate
     gen = net_uncond(num_steps=num_steps, seed=random_seed).detach().numpy()
@@ -632,11 +765,11 @@ def generate_conditionally(text='welcome home', random_seed=1,
                            max_strokes_per_char=40):
     '''
     Input:
-      text - str
-      random_seed - integer
+        text: str
+        random_seed: integer
 
     Output:
-      stroke - numpy 2D-array (T x 3)
+        stroke: numpy 2D-array (T x 3)
     '''
     # Preprocess text
     sentence = np.array([char2num[ch] for ch in text],
@@ -659,11 +792,11 @@ def generate_conditionally(text='welcome home', random_seed=1,
 def recognize_stroke(stroke, cut_threshold=0.3):
     '''
     Input:
-      stroke - numpy 2D-array (T x 3)
-      cut_threshold - float
+        stroke: numpy 2D-array (T x 3)
+        cut_threshold: float
 
     Output:
-      text - str
+        text: str
     '''
 
     # ### Proprocess stroke ###
