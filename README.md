@@ -1,7 +1,7 @@
 (Handwriting) Unconditional generation, Conditional generation, and Recognition with PyTorch
 ============================================================================================
 
-![Generated](/images/Hello, this is Jen-Yu Liu.png)
+![Generated](images/Hello, this is Jen-Yu Liu.png)
 
 The unconditoinal and conditional generation are based on "Generating Sequences With Recurrent Neural Networks" by Alex Graves (https://arxiv.org/pdf/1308.0850.pdf). The models are implemented with GRUs instead of LSTMs.
 
@@ -13,27 +13,27 @@ This repository contains the trained models of the three tasks. The main code an
 (Task 1) Unconditional generation (Goal: Nothing => hand writing)
 -----------------------------------------------------------------
 In `models/handwriting.py`:
-UncondStackedGRUCell: a module processing information at a given timestep in a sequence
-UncondNet: a modeule processing a sequence, using UncondStackedGRUCell as a submodule
-setup_unconditional_model: load the model
-generate_unconditionally: generate
+* UncondStackedGRUCell: a module processing information at a given timestep in a sequence
+* UncondNet: a modeule processing a sequence, using UncondStackedGRUCell as a submodule
+* setup_unconditional_model: load the model
+* generate_unconditionally: generate
 
 
 (Task 2) Conditional generation (Goal: text => hand writing)
 ------------------------------------------------------------
 In `models/handwriting.py`:
-CondStackedGRUCell: a module processing information at a given timestep in a sequence
-CondNet: a modeule processing a sequence, using CondStackedGRUCell as a submodule
-setup_conditional_model: load the model
-generate_conditionally: generate
+* CondStackedGRUCell: a module processing information at a given timestep in a sequence
+* CondNet: a modeule processing a sequence, using CondStackedGRUCell as a submodule
+* setup_conditional_model: load the model
+* generate_conditionally: generate
 
 
 (Task 3) Recognition (Goal: hand writing => text)
 -------------------------------------------------
 In `models/handwriting.py`:
-RecogNet: the recognition module 
-setup_recognition_mode: load the model
-recognize_stroke: recognize
+* RecogNet: the recognition module 
+* setup_recognition_mode: load the model
+* recognize_stroke: recognize
 
 I devised a method where the conditional generation (Task 2) provides assistance to the recognition model. 
 
