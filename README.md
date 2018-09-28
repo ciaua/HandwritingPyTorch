@@ -40,12 +40,14 @@ I devised a method where the conditional generation (Task 2) provides assistance
 I use the `phi` produced by the conditional model to provide training targets. In Alex Graves's paper, the `phi` is used as weights for the soft window that measures the importance of the chars at a given stroke. This means that the `phi` can tell us what char we are processing at a given stroke. By picking the char with the maximum `phi` value at each stroke, a training target with the same length as the strokes can be derived. In this way, we do not have to align the text and the strokes, and we can train the model pretty straightforward.
 
 For example, a derived target may look like this:
-> Text: 'I am fine'  
-> Char target: IIIII  aaammmmm    ffffffiiiiiiinnnnnneeeee
+
+Text: 'I am fine'  
+Char target: IIIII  aaammmmm    ffffffiiiiiiinnnnnneeeee
 
 In addition to the vector specifying the characters (char target), we can also derive a vector specifying where to cut the chars (cut target).
-> Char target: IIIII  aaammmmm    ffffffiiiiiiinnnnnneeeee  
-> Cut  target: 0000010100100001000100000100000010000010000
+
+Char target: IIIII  aaammmmm    ffffffiiiiiiinnnnnneeeee  
+Cut  target: 0000010100100001000100000100000010000010000
 
 The recognition model will have two heads that predict both of the chars and cuts.
  The cuts will also be used to estimate the number of chars in the text. See recognize_stroke and RecogNet in models/handwriting.py for more details.
