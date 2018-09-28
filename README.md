@@ -60,7 +60,7 @@ The recognition model will have two heads that predict both of the chars and cut
 
 I want the model to also know where to cut for cases like "zoo" and "happen" where the same char appearing consecutively ("oo" or "pp" in the examples). However, it turns out that these consecutive chars are still difficult for the model to recognize.
 
-In the evaluation phase, first the cut prediction is used to determined several segments. Note that the raw cut predictions will be in the range [0, 1], while we need binary decisions. A location is selected as a cut if 1) its cut prediction is higher than a given threshold (`cut_threshold`) and 2) it is a local maximum. These selected locations is set to 1, and other locations are set to 0.  Let's see an example:
+In the evaluation phase, first the cut prediction is used to determined several segments. Note that the raw cut predictions will be in the range [0, 1], while we need binary decisions. A location is selected as a cut if 1) its cut prediction is higher than a given threshold (`cut_threshold`) and 2) it is a local maximum. These selected locations are set to 1, and other locations are set to 0.  Let's see an example:
 ```
 Char  prediction: IIII   aaaaaammmmm    ffffffiiiiiinnnnnneeeeee  
 Cut   prediction: 0001000100100001000100000100000010000010000100
