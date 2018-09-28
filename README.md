@@ -64,8 +64,8 @@ In the evaluation phase, first the cut prediction is used to determined several 
 ```
 Char  prediction: IIII   aaaaaammmmm    ffffffiiiiiinnnnnneeeeee  
 Cut   prediction: 0001000100100001000100000100000010000010000100
-Text  prediction:  I |   |a | a  | m |  f  |   i  |  n  | e |
-Final prediction: "I aamfine"
+Text  prediction:  I |   |a | a  | m |  f  |   i  |  n  | e  | e
+Final prediction: "I aamfinee"
 ```
 There are 9 1s in the cut prediction, so the strokes are divided by the cut prediction into 10 segments. This also means that there will be 10 chars in the predicted text. 
 
