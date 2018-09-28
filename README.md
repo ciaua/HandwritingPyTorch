@@ -5,9 +5,9 @@
 
 The unconditoinal and conditional generation are based on "Generating Sequences With Recurrent Neural Networks" by Alex Graves (https://arxiv.org/pdf/1308.0850.pdf). The models are implemented with GRUs instead of LSTMs.
 
-The recogniton model is trained with the assistance from the conditional model. See below for more details.
+The recogniton model is trained with the help from the conditional model. See below for more details.
 
-This repository contains the trained models of the three tasks. The main code and trained models are in `models`. Main code: handwriting.py
+This repository contains the trained models of the three tasks. The main code (handwriting.py) and trained models are in `models`. 
 
 
 (Task 1) Unconditional generation (Goal: Nothing => hand writing)
