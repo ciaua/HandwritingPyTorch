@@ -6,18 +6,20 @@ The unconditoinal and conditional generation are based on "Generating Sequences 
 This repository contains the trained models of the three tasks.
 
 
-1. Unconditional generation (Nothing => hand writing)
------------------------------------------------------
+(Task 1) Unconditional generation (Goal: Nothing => hand writing)
+-----------------------------------------------------------------
 
 
 
-2. Conditional generation (text => hand writing)
-------------------------------------------------
+
+(Task 2) Conditional generation (Goal: text => hand writing)
+------------------------------------------------------------
 
 
-3. Recognition (hand writing => text)
-----------------------------------
-I devised a method where the conditional generation (2nd task) provides assistance to the recognition model.
+
+(Task 3) Recognition (Goal: hand writing => text)
+-------------------------------------------------
+I devised a method where the conditional generation (Task 2) provides assistance to the recognition model.
 
 
 Dependencies

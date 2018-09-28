@@ -21,16 +21,53 @@ char2num = {ch: ii for ii, ch in enumerate(allchars)}
 
 class UncondStackedGRUCell(nn.Module):
     ''' Stacked GRUCell for unconditional generation
+    This is a stack of GRU cells. It will process information in `one timestep`
+    in a sequence.
+
+    It takes a stroke as the input, and output the parameters of Gaussians and
+    Bernoulli distributions.
+
+    This module is used in UncondNet.
+
+    Args:
+        input_size: int
+            3
+
+        output_size: int
+            1 + num_components*num_params_per_comp
+
+        hidden_sizes: list
+            the feature size in a GRU cell
+
+        num_cells: int
+            the number of GRU cells in a stack
+
+    Inputs:
+        next_stroke: Tensor
+            shape=(batch_size, 3)
+
+        hiddens: list
+            a list of hidden layer outputs from the previous timestep
+            len(hiddens) == num_layers
+            The i-th item in `hiddens` has the
+            shape=(batch_size, hidden_sizes[i])
+
+    Outputs:
+        output: Tensor
+            shape=(batch_size, output_size)
+
+        new_hiddens: list
+            similar to `hiddens`
+
+
     '''
-    def __init__(self, input_size, output_size, hidden_sizes,
-                 num_cells, batch_first=True):
+    def __init__(self, input_size, output_size, hidden_sizes, num_cells):
         super(UncondStackedGRUCell, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_sizes = hidden_sizes
 
         self.num_cells = num_cells
-        self.batch_first = batch_first
 
         self.GRUCells = nn.ModuleList(
             [nn.GRUCell(input_size, hidden_size) if ii == 0 else
@@ -46,9 +83,7 @@ class UncondStackedGRUCell(nn.Module):
         input = next_stroke
 
         new_hiddens = []
-        for ii, [hidden, cell] in enumerate(
-                zip(hiddens,
-                    self.GRUCells)):
+        for ii, [hidden, cell] in enumerate(zip(hiddens, self.GRUCells)):
             new_hidden = cell(input, hidden)
 
             new_hiddens.append(new_hidden)
@@ -61,6 +96,8 @@ class UncondStackedGRUCell(nn.Module):
 
 
 class UncondNet(nn.Module):
+    ''' A recurrent neural network that unconditionally generates strokes
+    '''
     def __init__(self, input_size, output_size, hidden_sizes,
                  num_components, num_params_per_comp):
         super(UncondNet, self).__init__()
@@ -75,8 +112,7 @@ class UncondNet(nn.Module):
         self.num_params_per_comp = num_params_per_comp
 
         self.stackedGRUCell = UncondStackedGRUCell(
-            input_size, output_size, hidden_sizes, self.num_cells,
-            batch_first=True)
+            input_size, output_size, hidden_sizes, self.num_cells)
 
     def make_init_hidden(self, batch_size, k):
         init_hidden = torch.zeros(batch_size, k)
@@ -133,6 +169,13 @@ class UncondNet(nn.Module):
 
     def forward(self, num_steps=None, real_stroke=None, seed=None):
         '''
+        If `real_stroke' is given, it means that this is for training.
+        Therefore, the `outputs' will be the predicted parameters
+        for Gaussian and Bernoulli.
+
+        If real_stroke is None, it means that this is for evaluation.
+        Therefore, the `outputs' will the predicted strokes.
+
         noise.shape=(batch_size, noise_size)
         real_stroke.shape=(batch_size, 3, num_steps)
         '''
@@ -167,16 +210,61 @@ class UncondNet(nn.Module):
 
 
 class CondStackedGRUCell(nn.Module):
+    ''' Stacked GRUCell for conditional generation
+    This is a stack of GRU cells. It will process information in `one timestep`
+    in a sequence.
+
+    It takes a stroke, a sentence and a soft window as the input, and output
+    the parameters of Gaussians and Bernoulli distributions. In the process, it
+    also produces the parameters for making the soft window.
+
+    This module is used in CondNet.
+
+    Args:
+        input_size: int
+            3
+
+        output_size: int
+            1 + num_components*num_params_per_comp
+
+        hidden_sizes: list
+            the feature size in a GRU cell
+
+        num_cells: int
+            the number of GRU cells in a stack
+
+        num_allchars: int
+            the number of unique chars in the whole dataset.
+
+        num_sw_components: int
+            the number of Gaussian functions used in the soft window
+
+    Inputs:
+        next_stroke: Tensor
+            shape=(batch_size, 3)
+
+        hiddens: list
+            a list of hidden layer outputs from the previous timestep
+            len(hiddens) == num_layers
+            The i-th item in `hiddens` has the
+            shape=(batch_size, hidden_sizes[i])
+
+    Outputs:
+        output: Tensor
+            shape=(batch_size, output_size)
+
+        new_hiddens: list
+            similar to `hiddens`
+
+    '''
     def __init__(self, input_size, output_size, hidden_sizes,
-                 num_cells, num_allchars, num_sw_components,
-                 batch_first=True):
+                 num_cells, num_allchars, num_sw_components):
         super(CondStackedGRUCell, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_sizes = hidden_sizes
 
         self.num_cells = num_cells
-        self.batch_first = batch_first
 
         # Soft window
         self.num_allchars = num_allchars
@@ -285,8 +373,7 @@ class CondNet(nn.Module):
 
         self.stackedGRUCell = CondStackedGRUCell(
             input_size, output_size, hidden_sizes, self.num_cells,
-            self.num_allchars, self.num_sw_components,
-            batch_first=True)
+            self.num_allchars, self.num_sw_components)
 
     def make_init_hidden(self, batch_size, k):
         init_hidden = torch.zeros(batch_size, k)
@@ -523,7 +610,7 @@ def sentence2onehot(sentence, num_allchars):
     return out
 
 
-def generate_unconditionally(random_seed=1, num_steps=1000):
+def generate_unconditionally(random_seed=1, num_steps=600):
     '''
     Input:
       random_seed - integer
