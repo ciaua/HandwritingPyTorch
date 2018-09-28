@@ -27,6 +27,8 @@ In `models/handwriting.py`:
 * setup_conditional_model: load the model
 * generate_conditionally: generate
 
+This model is similar to the first one. It predicts an additional soft window to condition the strokes.
+
 
 (Task 3) Recognition (Goal: hand writing => text)
 -------------------------------------------------
@@ -56,7 +58,18 @@ Cut  target: 0000010100100001000100000100000010000010000
 The recognition model will have two heads that predict both of the chars and cuts.
  The cuts will also be used to estimate the number of chars in the text. See recognize_stroke and RecogNet in models/handwriting.py for more details.
 
-I want the model to also know where to cut for cases like "zoo" or "happen" that contains chars that appear twice consecutively. However, it turns out that these consecutive chars are still difficult for the model to recognize.
+I want the model to also know where to cut for cases like "zoo" and "happen" where the same char appearing consecutively ("oo" or "pp" in the examples). However, it turns out that these consecutive chars are still difficult for the model to recognize.
+
+In the evaluation phase, first the cut prediction is used to determined several segments. Assume the model produces the the following predictions
+```
+Char  prediction: IIII   aaaaaammmmm    ffffffiiiiiinnnnnneeeeee  
+Cut   prediction: 0001000100100001000100000100000010000010000100
+Text  prediction:  I |   |a | a  | m |  f  |   i  |  n  | e |
+Final prediction: "I aamfine"
+```
+There are 9 1s in the cut prediction, so the strokes are divided by the cut prediction into 10 segments. This also means that there will be 10 chars in the predicted text. 
+
+The next step is to determine which char will represent a given segment. We simply let the chars in a segment vote for their representative: The winner takes all.
 
 
 Dependencies
