@@ -41,13 +41,17 @@ I use the `phi` produced by the conditional model to provide training targets. I
 
 For example, a derived target may look like this:
 
+```
 Text: 'I am fine'  
 Char target: IIIII  aaammmmm    ffffffiiiiiiinnnnnneeeee
+```
 
 In addition to the vector specifying the characters (char target), we can also derive a vector specifying where to cut the chars (cut target).
 
+```
 Char target: IIIII  aaammmmm    ffffffiiiiiiinnnnnneeeee  
 Cut  target: 0000010100100001000100000100000010000010000
+```
 
 The recognition model will have two heads that predict both of the chars and cuts.
  The cuts will also be used to estimate the number of chars in the text. See recognize_stroke and RecogNet in models/handwriting.py for more details.
@@ -57,7 +61,7 @@ I want the model to also know where to cut for cases like "zoo" or "happen" that
 
 Dependencies
 ------------
-Python==3.7
-PyTorch==0.4
-Numpy
-Scipy
+* Python==3.7   
+* PyTorch==0.4   
+* Numpy   
+* Scipy
