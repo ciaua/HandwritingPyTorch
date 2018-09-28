@@ -1,7 +1,7 @@
 (Handwriting) Unconditional generation, Conditional generation, and Recognition with PyTorch
 ============================================================================================
 
-![Generated](images/Hello, this is Jen-Yu Liu.png)
+![Generated](images/sample.png)
 
 The unconditoinal and conditional generation are based on "Generating Sequences With Recurrent Neural Networks" by Alex Graves (https://arxiv.org/pdf/1308.0850.pdf). The models are implemented with GRUs instead of LSTMs.
 
